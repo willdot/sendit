@@ -24,8 +24,8 @@ func (p *NatsPublisher) Shutdown() {
 	p.natsConn.Close()
 }
 
-func (p *NatsPublisher) Send() error {
-	err := p.natsConn.Publish("test", []byte("hello there"))
+func (p *NatsPublisher) Publish(destinationName string, msg []byte) error {
+	err := p.natsConn.Publish(destinationName, msg)
 	if err != nil {
 		return errors.Wrap(err, "failed to send message")
 	}

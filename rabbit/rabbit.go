@@ -1,18 +1,41 @@
 package rabbit
 
 import (
-	"log"
-
 	"github.com/pkg/errors"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
+type DestinationType string
+
+const (
+	DestinationTypeQueue    DestinationType = "queue"
+	DestinationTypeExchange DestinationType = "exchange"
+)
+
 type RabbitPublisher struct {
 	connection      *amqp.Connection
-	destinationType string
+	destinationType DestinationType
+	url             string
 }
 
-func NewRabbitPublisher(url string, destinationType string) (*RabbitPublisher, error) {
+func (d DestinationType) validate() error {
+	if d == DestinationTypeQueue {
+		return nil
+	}
+
+	if d == DestinationTypeExchange {
+		return nil
+	}
+
+	return errors.New("invalid destination type")
+}
+
+func NewRabbitPublisher(url string, destinationType DestinationType) (*RabbitPublisher, error) {
+	err := destinationType.validate()
+	if err != nil {
+		return nil, err
+	}
+
 	// create connection
 	conn, err := amqp.Dial(url)
 	if err != nil {
@@ -30,16 +53,8 @@ func (r *RabbitPublisher) Shutdown() {
 	r.connection.Close()
 }
 
-// Publish will send a given message onto a given queue or exchange
+// Publish will send the provided message
 func (r *RabbitPublisher) Publish(destinationName string, msg []byte, headers map[string]interface{}) error {
-	if r.destinationType == "queue" {
-		return r.publishToQueue(destinationName, msg, headers)
-	}
-
-	return r.publishToExchange(destinationName, msg, headers)
-}
-
-func (r *RabbitPublisher) publishToExchange(exchangeName string, msg []byte, headers map[string]interface{}) error {
 	// open a channel
 	c, err := r.connection.Channel()
 	if err != nil {
@@ -47,7 +62,19 @@ func (r *RabbitPublisher) publishToExchange(exchangeName string, msg []byte, hea
 	}
 	defer c.Close()
 
-	err = c.ExchangeDeclarePassive(exchangeName, "headers", false, false, false, false, nil)
+	switch r.destinationType {
+	case DestinationTypeExchange:
+		return r.publishToExchange(c, destinationName, msg, headers)
+	case DestinationTypeQueue:
+		return r.publishToQueue(c, destinationName, msg, headers)
+	default:
+	}
+
+	return nil
+}
+
+func (r *RabbitPublisher) publishToExchange(c *amqp.Channel, exchangeName string, msg []byte, headers map[string]interface{}) error {
+	err := c.ExchangeDeclarePassive(exchangeName, "headers", false, false, false, false, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to declare exchange")
 	}
@@ -65,14 +92,7 @@ func (r *RabbitPublisher) publishToExchange(exchangeName string, msg []byte, hea
 	return nil
 }
 
-func (r *RabbitPublisher) publishToQueue(queueName string, msg []byte, headers map[string]interface{}) error {
-	// open a channel
-	c, err := r.connection.Channel()
-	if err != nil {
-		log.Fatalf("failed to open channel: %s", err.Error())
-	}
-	defer c.Close()
-
+func (r *RabbitPublisher) publishToQueue(c *amqp.Channel, queueName string, msg []byte, headers map[string]interface{}) error {
 	queue, err := c.QueueDeclarePassive(queueName, false, false, false, false, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to declare queue")
