@@ -1,0 +1,16 @@
+version: '3.9'
+services:
+  rabbitmq:
+    container_name: rabbit
+    ports:
+    - "15672:15672"
+    - "5672:5672"
+    image: "rabbitmq:3.8-management-alpine"
+
+  nats:
+    image: nats
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+      - "6222:6222"
+    command: -js
