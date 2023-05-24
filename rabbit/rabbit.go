@@ -1,10 +1,15 @@
 package rabbit
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/pkg/errors"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/willdot/sendit/config"
 )
 
+// DestinationType is where the message will be sent, either directly to a queue or to an exchange
 type DestinationType string
 
 const (
@@ -12,51 +17,53 @@ const (
 	DestinationTypeExchange DestinationType = "exchange"
 )
 
+// RabbitPublisher is a publisher that can send messages to a RabbitMQ server
 type RabbitPublisher struct {
-	connection      *amqp.Connection
+	conn            *amqp.Connection
 	destinationType DestinationType
 	url             string
 }
 
-func (d DestinationType) validate() error {
-	if d == DestinationTypeQueue {
-		return nil
-	}
-
-	if d == DestinationTypeExchange {
-		return nil
-	}
-
-	return errors.New("invalid destination type")
-}
-
-func NewRabbitPublisher(url string, destinationType DestinationType) (*RabbitPublisher, error) {
-	err := destinationType.validate()
-	if err != nil {
-		return nil, err
-	}
-
+// NewRabbitPublisher will create a connection to a RabbitMQ server. Shutdown on the returned publisher should be called
+// to close the connection once finished
+func NewRabbitPublisher(cfg *config.Config) (*RabbitPublisher, error) {
 	// create connection
-	conn, err := amqp.Dial(url)
+	conn, err := amqp.Dial(cfg.URL)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to open connection")
 	}
 
+	var destinationType DestinationType
+	switch cfg.Broker {
+	case config.RabbitExchangeBroker:
+		destinationType = DestinationTypeExchange
+	case config.RabbitQueueBroker:
+		destinationType = DestinationTypeQueue
+	default:
+		return nil, fmt.Errorf("invalid destination type provided '%s'. Should be either Queue or Exchange")
+	}
+
 	return &RabbitPublisher{
-		connection:      conn,
+		conn:            conn,
 		destinationType: destinationType,
+		url:             cfg.URL,
 	}, nil
 }
 
-// Shutdown will close the rabbit connection
+// Shutdown will close the RabbitMQ connection
 func (r *RabbitPublisher) Shutdown() {
-	r.connection.Close()
+	r.conn.Close()
 }
 
 // Publish will send the provided message
-func (r *RabbitPublisher) Publish(destinationName string, msg []byte, headers map[string]interface{}) error {
+func (r *RabbitPublisher) Publish(destinationName string, msgBody, headersData []byte) error {
+	headers, err := convertHeaders(headersData)
+	if err != nil {
+		return err
+	}
+
 	// open a channel
-	c, err := r.connection.Channel()
+	c, err := r.conn.Channel()
 	if err != nil {
 		return errors.Wrap(err, "failed to open channel")
 	}
@@ -64,13 +71,27 @@ func (r *RabbitPublisher) Publish(destinationName string, msg []byte, headers ma
 
 	switch r.destinationType {
 	case DestinationTypeExchange:
-		return r.publishToExchange(c, destinationName, msg, headers)
+		return r.publishToExchange(c, destinationName, msgBody, headers)
 	case DestinationTypeQueue:
-		return r.publishToQueue(c, destinationName, msg, headers)
+		return r.publishToQueue(c, destinationName, msgBody, headers)
 	default:
 	}
 
 	return nil
+}
+
+func convertHeaders(headerData []byte) (map[string]interface{}, error) {
+	if headerData == nil {
+		return nil, nil
+	}
+
+	var headers map[string]interface{}
+	err := json.Unmarshal(headerData, &headers)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to convert header data")
+	}
+
+	return headers, nil
 }
 
 func (r *RabbitPublisher) publishToExchange(c *amqp.Channel, exchangeName string, msg []byte, headers map[string]interface{}) error {
