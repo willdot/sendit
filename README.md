@@ -1,6 +1,8 @@
 # Sendit ✉️
 A CLI tool for sending message(s) to different message brokers using bodies and headers from a file. 
 
+![](https://github.com/willdot/sendit/blob/main/vhs/sendit.gif)
+
 ## Use cases 🤔
 
 1. You want to send 100 messages to see how your services that consume the messages handle them. Perhaps you want to test idempotency or just see how your service handles the load.
