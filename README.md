@@ -49,3 +49,11 @@ Headers should be in JSON format in a key / value format. eg:
 sendit -body="body.json" -subject="test"
 ```
 * subject(required) - the subject you wish to use for the message
+
+Headers should be in JSON format in a key / array string format. eg:
+``` json
+{
+    "header1" : ["value1", "value2"],
+    "header2" : ["value3"]
+}
+```
