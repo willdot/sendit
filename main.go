@@ -8,9 +8,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/willdot/sendit/config"
+	"github.com/willdot/sendit/input"
 	"github.com/willdot/sendit/nats"
 	"github.com/willdot/sendit/rabbit"
-	"github.com/willdot/sendit/ui"
 )
 
 func main() {
@@ -20,7 +20,7 @@ func main() {
 		config.RabbitQueueBroker,
 	}
 
-	selectedBroker, quit := ui.PromptUserForSingleChoice(messageBrokers, "Select which message broker you wish to use")
+	selectedBroker, quit := input.PromptUserForSingleChoice(messageBrokers, "Select which message broker you wish to use")
 	if quit {
 		fmt.Println("you quit")
 		return
