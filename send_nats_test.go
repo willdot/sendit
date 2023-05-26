@@ -41,6 +41,8 @@ func (fr *mockFileReader) ReadFile(filename string) ([]byte, error) {
 		return []byte(nats_header), nil
 	case "rabbit-headers.json":
 		return []byte(rabbit_header), nil
+	case "kafka-headers.json":
+		return []byte(kafka_header), nil
 	default:
 		return nil, fmt.Errorf("invalid file name requested")
 	}

@@ -9,12 +9,14 @@ import (
 
 	"github.com/willdot/sendit/config"
 	"github.com/willdot/sendit/input"
+	"github.com/willdot/sendit/kafka"
 	"github.com/willdot/sendit/nats"
 	"github.com/willdot/sendit/rabbit"
 )
 
 func main() {
 	messageBrokers := []string{
+		config.KafkaBroker,
 		config.RabbitExchangeBroker,
 		config.RabbitQueueBroker,
 		config.NatsBroker,
@@ -75,6 +77,11 @@ func send(cfg *config.Config, fr fileReader) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to send to NATs")
 		}
+	case config.KafkaBroker:
+		err := sendKafka(cfg, bodyData, headersData)
+		if err != nil {
+			return errors.Wrap(err, "failed to send to Kafka")
+		}
 	default:
 	}
 	fmt.Println("Finished 🎉")
@@ -111,4 +118,19 @@ func sendNats(cfg *config.Config, msgBody, headers []byte) error {
 	}
 	return nil
 
+}
+
+func sendKafka(cfg *config.Config, msgBody, headers []byte) error {
+	publisher, err := kafka.NewKafkaPublisher(cfg)
+	if err != nil {
+		return errors.Wrap(err, "failed to create new kafka publisher")
+	}
+	defer publisher.Shutdown()
+	for i := 0; i < cfg.Repeat; i++ {
+		err = publisher.Publish(cfg.KafkaCfg.Topic, msgBody, headers)
+		if err != nil {
+			return errors.Wrap(err, "failed to send message")
+		}
+	}
+	return nil
 }

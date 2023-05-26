@@ -8,6 +8,7 @@ const (
 	RabbitQueueBroker    = "RabbitMQ - Queue"
 	RabbitExchangeBroker = "RabbitMQ - Exchange"
 	NatsBroker           = "NATs"
+	KafkaBroker          = "Kafka"
 )
 
 // Config contains all of the configuration required to send messages to a broker
@@ -19,6 +20,7 @@ type Config struct {
 	Repeat          int
 	RabbitCfg       *RabbitConfig
 	NatsCfg         *NatsConfig
+	KafkaCfg        *KafkaConfig
 }
 
 // NewConfig will create and validate configuration based on the provided flags
@@ -40,6 +42,12 @@ func NewConfig(brokerType string, flags flags) (*Config, error) {
 	if brokerType == NatsBroker {
 		cfg.NatsCfg = &NatsConfig{
 			Subject: flags.subject,
+		}
+	}
+
+	if brokerType == KafkaBroker {
+		cfg.KafkaCfg = &KafkaConfig{
+			Topic: flags.topic,
 		}
 	}
 
@@ -97,12 +105,27 @@ func (c NatsConfig) validate() error {
 	return nil
 }
 
+// KafkaConfig contains config specifically for Kafka
+type KafkaConfig struct {
+	Topic string
+}
+
+func (c KafkaConfig) validate() error {
+	if c.Topic == "" {
+		return errors.New("topic flag should be provided")
+	}
+
+	return nil
+}
+
 func defaultURL(broker string) string {
 	switch broker {
 	case RabbitQueueBroker, RabbitExchangeBroker:
 		return "amqp://guest:guest@localhost:5672/"
 	case NatsBroker:
 		return "localhost:4222"
+	case KafkaBroker:
+		return "localhost:29092"
 	default:
 		return ""
 	}

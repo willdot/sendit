@@ -60,6 +60,20 @@ Headers should be in JSON format in a key / array string format. eg:
 }
 ```
 
+### Kafka
+``` sh
+sendit -body="body.json" -topic="test"
+```
+* topic(required) - the topic you wish to send the message too
+
+Headers should be in JSON format in a key / string format. eg:
+``` json
+{
+    "header1" : "value1",
+    "header2" : "value2"
+}
+```
+
 ## Contributing 🤝
 
 Issues and PRs welcome.

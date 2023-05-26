@@ -9,6 +9,7 @@ type flags struct {
 	destinationName string
 	headersFileName string
 	subject         string
+	topic           string
 }
 
 // GetFlags will parse the flags provided by the users input and return the results
@@ -30,6 +31,12 @@ func GetFlags(brokerType string) flags {
 		subject = flag.String("subject", "", "the subject you wish to send the message to")
 	}
 
+	// kafka flags
+	var topic *string
+	if brokerType == KafkaBroker {
+		topic = flag.String("topic", "", "the topic you wish to send the message to")
+	}
+
 	flag.Parse()
 
 	result := flags{
@@ -46,6 +53,9 @@ func GetFlags(brokerType string) flags {
 	}
 	if subject != nil {
 		result.subject = *subject
+	}
+	if topic != nil {
+		result.topic = *topic
 	}
 
 	return result
