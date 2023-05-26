@@ -7,7 +7,7 @@ A CLI tool for sending message(s) to different message brokers using bodies and 
 
 1. You want to see how your service handles a specific message body or header really quickly without having to find where you have tests written that you can copy / alter.
 
-1. You have a really complex microservice setup and you want to trigger some behaviour from a message, but don't want to go through the hassle of setting other things up to do it "the right way"
+1. You have a really complex microservice setup and you want to trigger some behaviour from a message, but don't want to go through the hassle of setting other things up to do it "the right way". (For example a cache is cleared somewhere when a message is consumed)
 
 These are just examples of when I've wanted a tool that could do this.
 
@@ -57,3 +57,9 @@ Headers should be in JSON format in a key / array string format. eg:
     "header2" : ["value3"]
 }
 ```
+
+## Contributing 🤝
+
+Issues and PRs welcome.
+
+To run the tests you will need to run `docker-compose up` to get the message broker servers running.
