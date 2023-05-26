@@ -83,7 +83,7 @@ func TestSendNatsRepeat(t *testing.T) {
 		},
 		URL:             nats_url,
 		BodyFileName:    "body.json",
-		HeadersFileName: "headers.json",
+		HeadersFileName: "nats-headers.json",
 		Repeat:          5,
 	}
 
