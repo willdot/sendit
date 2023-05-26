@@ -15,9 +15,9 @@ import (
 
 func main() {
 	messageBrokers := []string{
-		config.NatsBroker,
 		config.RabbitExchangeBroker,
 		config.RabbitQueueBroker,
+		config.NatsBroker,
 	}
 
 	selectedBroker, quit := input.PromptUserForSingleChoice(messageBrokers, "Select which message broker you wish to use")
@@ -77,6 +77,7 @@ func send(cfg *config.Config, fr fileReader) error {
 		}
 	default:
 	}
+	fmt.Println("Finished 🎉")
 	return nil
 }
 
