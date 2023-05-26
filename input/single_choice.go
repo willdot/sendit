@@ -53,11 +53,11 @@ func (m singleChoiceModel) Update(incomingMsg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyCtrlC, tea.KeyEsc:
 			m.quit = true
 			return m, tea.Quit
-		case tea.KeyUp:
+		case tea.KeyUp, tea.KeyShiftTab:
 			if m.cursor > 0 {
 				m.cursor--
 			}
-		case tea.KeyDown:
+		case tea.KeyDown, tea.KeyTab:
 			if m.cursor < len(m.choices)-1 {
 				m.cursor++
 			}
