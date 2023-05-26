@@ -57,6 +57,7 @@ Headers should be in JSON format in a key / array string format. eg:
     "header2" : ["value3"]
 }
 ```
+![](https://github.com/willdot/sendit/blob/main/vhs/sendit.gif)
 
 ## Contributing 🤝
 
