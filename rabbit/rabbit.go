@@ -1,6 +1,7 @@
 package rabbit
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -40,7 +41,7 @@ func NewRabbitPublisher(cfg *config.Config) (*RabbitPublisher, error) {
 	case config.RabbitQueueBroker:
 		destinationType = DestinationTypeQueue
 	default:
-		return nil, fmt.Errorf("invalid destination type provided '%s'. Should be either Queue or Exchange")
+		return nil, fmt.Errorf("invalid destination type provided '%s'. Should be either Queue or Exchange", cfg.Broker)
 	}
 
 	return &RabbitPublisher{
@@ -100,7 +101,7 @@ func (r *RabbitPublisher) publishToExchange(c *amqp.Channel, exchangeName string
 		return errors.Wrap(err, "failed to declare exchange")
 	}
 
-	err = c.Publish(exchangeName, "", false, false, amqp.Publishing{
+	err = c.PublishWithContext(context.Background(), exchangeName, "", false, false, amqp.Publishing{
 		Headers:     headers,
 		ContentType: "application/json",
 		Body:        msg,
@@ -119,7 +120,7 @@ func (r *RabbitPublisher) publishToQueue(c *amqp.Channel, queueName string, msg 
 		return errors.Wrap(err, "failed to declare queue")
 	}
 
-	err = c.Publish("", queueName, false, false, amqp.Publishing{
+	err = c.PublishWithContext(context.Background(), "", queueName, false, false, amqp.Publishing{
 		Headers:     headers,
 		ContentType: "application/json",
 		Body:        msg,

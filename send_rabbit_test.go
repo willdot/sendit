@@ -49,7 +49,7 @@ func TestSendRabbitQueue(t *testing.T) {
 	case msg := <-consumer.msgs:
 		assert.Equal(t, string(body), string(msg.Body))
 		assertRabbitHeadersMatch(t, rabbit_header, msg.Headers)
-	case _ = <-ctx.Done():
+	case <-ctx.Done():
 		t.Fatalf("timed out waiting for messages")
 	}
 }
@@ -79,7 +79,7 @@ func TestSendRabbitQueueRepeat(t *testing.T) {
 		case msg := <-consumer.msgs:
 			assert.Equal(t, string(body), string(msg.Body))
 			assertRabbitHeadersMatch(t, rabbit_header, msg.Headers)
-		case _ = <-ctx.Done():
+		case <-ctx.Done():
 			t.Fatalf("timed out waiting for messages")
 		}
 	}
@@ -109,7 +109,7 @@ func TestSendRabbitExchange(t *testing.T) {
 	case msg := <-consumer.msgs:
 		assert.Equal(t, string(body), string(msg.Body))
 		assertRabbitHeadersMatch(t, rabbit_header, msg.Headers)
-	case _ = <-ctx.Done():
+	case <-ctx.Done():
 		t.Fatalf("timed out waiting for messages")
 	}
 }
@@ -139,7 +139,7 @@ func TestSendRabbitExchangeRepeat(t *testing.T) {
 		case msg := <-consumer.msgs:
 			assert.Equal(t, string(body), string(msg.Body))
 			assertRabbitHeadersMatch(t, rabbit_header, msg.Headers)
-		case _ = <-ctx.Done():
+		case <-ctx.Done():
 			t.Fatalf("timed out waiting for messages")
 		}
 	}

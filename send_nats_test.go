@@ -70,7 +70,7 @@ func TestSendNats(t *testing.T) {
 	case msg := <-natsSub.msgs:
 		assert.Equal(t, string(body), string(msg.Data))
 		assertNatsHeadersMatch(t, nats_header, msg.Header)
-	case _ = <-ctx.Done():
+	case <-ctx.Done():
 		t.Fatalf("timed out waiting for messages")
 	}
 }
@@ -100,7 +100,7 @@ func TestSendNatsRepeat(t *testing.T) {
 		case msg := <-natsSub.msgs:
 			assert.Equal(t, string(body), string(msg.Data))
 			assertNatsHeadersMatch(t, nats_header, msg.Header)
-		case _ = <-ctx.Done():
+		case <-ctx.Done():
 			t.Fatalf("timed out waiting for messages")
 		}
 	}
@@ -130,7 +130,7 @@ func setupNats(t *testing.T, ctx context.Context) natsSubscriber {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		sub.Unsubscribe()
+		_ = sub.Unsubscribe()
 		nc.Close()
 	})
 
