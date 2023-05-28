@@ -36,13 +36,13 @@ func TestSendKafka(t *testing.T) {
 		Repeat:          1,
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-
-	consumer := setupKafka(t, ctx)
+	consumer := setupKafka(t, context.Background())
 
 	err := send(cfg, &mockFileReader{})
 	require.NoError(t, err)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
 
 	select {
 	case msg := <-consumer.msgs:
@@ -65,13 +65,13 @@ func TestSendKafkaRepeat(t *testing.T) {
 		Repeat:          5,
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-
-	consumer := setupKafka(t, ctx)
+	consumer := setupKafka(t, context.Background())
 
 	err := send(cfg, &mockFileReader{})
 	require.NoError(t, err)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
 
 	for i := 0; i < 5; i++ {
 		select {
