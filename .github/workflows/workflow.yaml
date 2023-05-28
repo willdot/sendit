@@ -31,6 +31,7 @@ jobs:
         image: bitnami/kafka
         ports:
           - "9092:9092"
+          - "29092:29092"
         # options: >-
         #   --health-cmd "kafka-broker-api-versions.sh --version"
         #   --health-interval 10s
