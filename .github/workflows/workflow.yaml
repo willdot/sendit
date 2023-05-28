@@ -7,15 +7,19 @@ jobs:
 
     runs-on: ubuntu-latest
     services: 
-      service-name-1:
+      rabbitmq:
         image: "rabbitmq:3.8-management-alpine"
         ports:
            - "5672:5672"
 
-      service-name-2:
+      nats:
         image: nats
         ports:
            - "4222:4222"
+      kafka:
+        image: confluentinc/cp-kafka
+        ports:
+          - "29092:29092"
 
     steps:
       - uses: actions/checkout@v3
