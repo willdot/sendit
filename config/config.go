@@ -125,7 +125,7 @@ func defaultURL(broker string) string {
 	case NatsBroker:
 		return "localhost:4222"
 	case KafkaBroker:
-		return "localhost:29092"
+		return "localhost:9092"
 	default:
 		return ""
 	}
