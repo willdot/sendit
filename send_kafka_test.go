@@ -21,7 +21,7 @@ const (
 	`
 	test_topic = "test-topic"
 
-	kafka_url = "localhost:29092"
+	kafka_url = "localhost:9092"
 )
 
 func TestSendKafka(t *testing.T) {
