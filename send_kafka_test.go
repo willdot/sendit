@@ -65,7 +65,7 @@ func TestSendKafkaRepeat(t *testing.T) {
 		Repeat:          5,
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	consumer := setupKafka(t, ctx)

@@ -22,8 +22,9 @@ jobs:
       - name: Start containers
         run: docker-compose -f "docker-compose.yml" up -d
 
-      - name: Sleep for 15 seconds
-        run: sleep 15s
+      # hack to get containers to be ready before running tests
+      - name: Sleep for 10 seconds
+        run: sleep 10s
         shell: bash
 
       - name: Test
