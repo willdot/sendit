@@ -16,7 +16,7 @@ jobs:
         ports:
            - "4222:4222"
   
-      zoo_keeper:
+      zookeeper:
         image: bitnami/zookeeper
         ports:
           - 2181:2181
@@ -37,12 +37,11 @@ jobs:
           --health-timeout 5s
           --health-retries 5
         env:
-          KAFKA_CFG_KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
-          ALLOW_PLAINTEXT_LISTENER: yes
-          KAFKA_CFG_LISTENERS: "CLIENT://:9092,INTERNAL://:9093"
-          KAFKA_CFG_ADVERTISED_LISTENERS: "CLIENT://localhost:9092,INTERNAL://kafka:9093"
           KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "CLIENT:PLAINTEXT,INTERNAL:PLAINTEXT"
-          KAFKA_CFG_INTER_BROKER_LISTENER_NAME: INTERNAL
+          KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
+          ALLOW_PLAINTEXT_LISTENER: yes
+          KAFKA_CFG_LISTENERS: PLAINTEXT://:9092
+          KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://127.0.0.1:9092
 
     steps:
       - uses: actions/checkout@v3
