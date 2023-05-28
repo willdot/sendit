@@ -21,7 +21,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: bbcCorp/kafka-actions@v1
       
 
       - name: Set up Go
@@ -36,6 +35,7 @@ jobs:
         run: go build -v ./...
 
       - name: Test
+        uses: bbcCorp/kafka-actions@v1
         run: go test -v ./...
 
       - name: lint
