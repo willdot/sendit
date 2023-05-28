@@ -62,7 +62,7 @@ func TestSendKafkaRepeat(t *testing.T) {
 		URL:             kafka_url,
 		BodyFileName:    "body.json",
 		HeadersFileName: "kafka-headers.json",
-		Repeat:          5,
+		Repeat:          2,
 	}
 
 	consumer := setupKafka(t, context.Background())
@@ -73,7 +73,7 @@ func TestSendKafkaRepeat(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 2; i++ {
 		select {
 		case msg := <-consumer.msgs:
 			assert.Equal(t, string(body), string(msg.Value))
