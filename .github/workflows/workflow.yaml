@@ -8,6 +8,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Start containers
+        run: docker-compose -f "docker-compose.yml" up -d
+
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
@@ -18,14 +21,6 @@ jobs:
 
       - name: Build
         run: go build -v ./...
-
-      - name: Start containers
-        run: docker-compose -f "docker-compose.yml" up -d
-
-      # hack to get containers to be ready before running tests
-      - name: Sleep for 10 seconds
-        run: sleep 10s
-        shell: bash
 
       - name: Test
         run: go test -v ./...

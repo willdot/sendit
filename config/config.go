@@ -72,6 +72,12 @@ func (c Config) validate() error {
 		}
 	}
 
+	if c.Broker == KafkaBroker {
+		if err := c.KafkaCfg.validate(); err != nil {
+			return err
+		}
+	}
+
 	if c.BodyFileName == "" {
 		return errors.New("body flag must be provided")
 	}

@@ -40,7 +40,7 @@ func (p *KafkaPublisher) Publish(destination string, msgBody, headersData []byte
 		return err
 	}
 
-	p.conn.SendMessage(&sarama.ProducerMessage{
+	_, _, err = p.conn.SendMessage(&sarama.ProducerMessage{
 		Topic:   destination,
 		Value:   sarama.StringEncoder(msgBody),
 		Headers: headers,
