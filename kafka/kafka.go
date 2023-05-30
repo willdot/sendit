@@ -59,7 +59,6 @@ func (p *KafkaPublisher) Publish(destination string, msgs []Message) error {
 		return errors.Wrap(err, "failed to send message")
 	}
 
-	p.conn.CommitTxn()
 	return nil
 }
 
