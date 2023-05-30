@@ -58,13 +58,13 @@ func TestSendNats(t *testing.T) {
 		Repeat:          1,
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-
-	natsSub := setupNats(t, ctx)
+	natsSub := setupNats(t, context.Background())
 
 	err := send(cfg, &mockFileReader{})
 	require.NoError(t, err)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
 
 	select {
 	case msg := <-natsSub.msgs:
@@ -87,13 +87,13 @@ func TestSendNatsRepeat(t *testing.T) {
 		Repeat:          5,
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-
-	natsSub := setupNats(t, ctx)
+	natsSub := setupNats(t, context.Background())
 
 	err := send(cfg, &mockFileReader{})
 	require.NoError(t, err)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
 
 	for i := 0; i < 5; i++ {
 		select {
