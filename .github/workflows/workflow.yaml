@@ -26,4 +26,4 @@ jobs:
         run: golangci-lint run
 
       - name: Test
-      run: go test ./... -count=1 -v
+        run: go test ./... -count=1 -v
