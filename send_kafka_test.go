@@ -75,7 +75,7 @@ func TestSendKafkaRepeat(t *testing.T) {
 
 	for i := 0; i < 5; i++ {
 		select {
-		case msg := <-consumer.msgs:
+		case msg := <-consumer.pc.Messages():
 			assert.Equal(t, string(body), string(msg.Value))
 			assertKafkaHeadersMatch(t, kafka_header, msg.Headers)
 		case <-ctx.Done():
@@ -103,15 +103,12 @@ func assertKafkaHeadersMatch(t *testing.T, expected string, actual []*sarama.Rec
 
 type kafkaConsumer struct {
 	msgs chan *sarama.ConsumerMessage
+	pc   sarama.PartitionConsumer
 }
 
 func setupKafka(t *testing.T, ctx context.Context) kafkaConsumer {
 	consumer, err := sarama.NewConsumer([]string{kafka_url}, sarama.NewConfig())
 	require.NoError(t, err)
-
-	kafkaConsumer := kafkaConsumer{
-		msgs: make(chan *sarama.ConsumerMessage),
-	}
 
 	t.Cleanup(func() {
 		broker := sarama.NewBroker(kafka_url)
@@ -129,12 +126,17 @@ func setupKafka(t *testing.T, ctx context.Context) kafkaConsumer {
 	pc, err := consumer.ConsumePartition(test_topic, 0, sarama.OffsetOldest)
 	require.NoError(t, err)
 
-	go func() {
-		for {
-			msg := <-pc.Messages()
-			kafkaConsumer.msgs <- msg
-		}
-	}()
+	// go func() {
+	// 	for {
+	// 		msg := <-pc.Messages()
+	// 		kafkaConsumer.msgs <- msg
+	// 	}
+	// }()
+
+	kafkaConsumer := kafkaConsumer{
+		msgs: make(chan *sarama.ConsumerMessage),
+		pc:   pc,
+	}
 
 	return kafkaConsumer
 }
