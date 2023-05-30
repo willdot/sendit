@@ -33,22 +33,33 @@ func (p *KafkaPublisher) Shutdown() {
 	_ = p.conn.Close()
 }
 
+type Message struct {
+	Body       []byte
+	HeaderData []byte
+}
+
 // Publish will send the provided message
-func (p *KafkaPublisher) Publish(destination string, msgBody, headersData []byte) error {
-	headers, err := convertHeaders(headersData)
-	if err != nil {
-		return err
+func (p *KafkaPublisher) Publish(destination string, msgs []Message) error {
+	msgsToSend := make([]*sarama.ProducerMessage, 0, len(msgs))
+	for _, msg := range msgs {
+		headers, err := convertHeaders(msg.HeaderData)
+		if err != nil {
+			return err
+		}
+
+		msgsToSend = append(msgsToSend, &sarama.ProducerMessage{
+			Topic:   destination,
+			Value:   sarama.StringEncoder(msg.Body),
+			Headers: headers,
+		})
 	}
 
-	_, _, err = p.conn.SendMessage(&sarama.ProducerMessage{
-		Topic:   destination,
-		Value:   sarama.StringEncoder(msgBody),
-		Headers: headers,
-	})
+	err := p.conn.SendMessages(msgsToSend)
 	if err != nil {
 		return errors.Wrap(err, "failed to send message")
 	}
 
+	p.conn.CommitTxn()
 	return nil
 }
 

@@ -82,8 +82,6 @@ func TestSendKafkaRepeat(t *testing.T) {
 			t.Fatalf("timed out waiting for messages")
 		}
 	}
-
-	t.Fail()
 }
 
 func assertKafkaHeadersMatch(t *testing.T, expected string, actual []*sarama.RecordHeader) {
