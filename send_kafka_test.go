@@ -45,7 +45,7 @@ func TestSendKafka(t *testing.T) {
 	defer cancel()
 
 	select {
-	case msg := <-consumer.msgs:
+	case msg := <-consumer.pc.Messages():
 		assert.Equal(t, string(body), string(msg.Value))
 		assertKafkaHeadersMatch(t, kafka_header, msg.Headers)
 	case <-ctx.Done():
