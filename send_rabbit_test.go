@@ -37,7 +37,7 @@ func TestSendRabbitQueue(t *testing.T) {
 		Repeat:          1,
 	}
 
-	consumer := setupRabbit(t, context.Background())
+	consumer := setupRabbit(t)
 
 	err := send(cfg, &mockFileReader{})
 	require.NoError(t, err)
@@ -66,7 +66,7 @@ func TestSendRabbitQueueRepeat(t *testing.T) {
 		Repeat:          5,
 	}
 
-	consumer := setupRabbit(t, context.Background())
+	consumer := setupRabbit(t)
 
 	err := send(cfg, &mockFileReader{})
 	require.NoError(t, err)
@@ -97,7 +97,7 @@ func TestSendRabbitExchange(t *testing.T) {
 		Repeat:          1,
 	}
 
-	consumer := setupRabbit(t, context.Background())
+	consumer := setupRabbit(t)
 
 	err := send(cfg, &mockFileReader{})
 	require.NoError(t, err)
@@ -126,7 +126,7 @@ func TestSendRabbitExchangeRepeat(t *testing.T) {
 		Repeat:          5,
 	}
 
-	consumer := setupRabbit(t, context.Background())
+	consumer := setupRabbit(t)
 
 	err := send(cfg, &mockFileReader{})
 	require.NoError(t, err)
@@ -157,7 +157,7 @@ type rabbitConsumer struct {
 	msgs <-chan amqp.Delivery
 }
 
-func setupRabbit(t *testing.T, ctx context.Context) rabbitConsumer {
+func setupRabbit(t *testing.T) rabbitConsumer {
 	conn, err := amqp.Dial(rabbit_url)
 	require.NoError(t, err)
 
