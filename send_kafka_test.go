@@ -36,16 +36,16 @@ func TestSendKafka(t *testing.T) {
 		Repeat:          1,
 	}
 
-	consumer := setupKafka(t, context.Background())
+	consumer := setupKafka(t)
 
 	err := send(cfg, &mockFileReader{})
 	require.NoError(t, err)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
 	select {
-	case msg := <-consumer.pc.Messages():
+	case msg := <-consumer.msgs:
 		assert.Equal(t, string(body), string(msg.Value))
 		assertKafkaHeadersMatch(t, kafka_header, msg.Headers)
 	case <-ctx.Done():
@@ -65,17 +65,17 @@ func TestSendKafkaRepeat(t *testing.T) {
 		Repeat:          5,
 	}
 
-	consumer := setupKafka(t, context.Background())
+	consumer := setupKafka(t)
 
 	err := send(cfg, &mockFileReader{})
 	require.NoError(t, err)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
 	for i := 0; i < 5; i++ {
 		select {
-		case msg := <-consumer.pc.Messages():
+		case msg := <-consumer.msgs:
 			assert.Equal(t, string(body), string(msg.Value))
 			assertKafkaHeadersMatch(t, kafka_header, msg.Headers)
 		case <-ctx.Done():
@@ -103,10 +103,9 @@ func assertKafkaHeadersMatch(t *testing.T, expected string, actual []*sarama.Rec
 
 type kafkaConsumer struct {
 	msgs chan *sarama.ConsumerMessage
-	pc   sarama.PartitionConsumer
 }
 
-func setupKafka(t *testing.T, ctx context.Context) kafkaConsumer {
+func setupKafka(t *testing.T) kafkaConsumer {
 	consumer, err := sarama.NewConsumer([]string{kafka_url}, sarama.NewConfig())
 	require.NoError(t, err)
 
@@ -126,17 +125,16 @@ func setupKafka(t *testing.T, ctx context.Context) kafkaConsumer {
 	pc, err := consumer.ConsumePartition(test_topic, 0, sarama.OffsetOldest)
 	require.NoError(t, err)
 
-	// go func() {
-	// 	for {
-	// 		msg := <-pc.Messages()
-	// 		kafkaConsumer.msgs <- msg
-	// 	}
-	// }()
-
 	kafkaConsumer := kafkaConsumer{
 		msgs: make(chan *sarama.ConsumerMessage),
-		pc:   pc,
 	}
+
+	go func() {
+		for {
+			msg := <-pc.Messages()
+			kafkaConsumer.msgs <- msg
+		}
+	}()
 
 	return kafkaConsumer
 }

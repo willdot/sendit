@@ -60,12 +60,12 @@ func TestSendNats(t *testing.T) {
 		Repeat:          1,
 	}
 
-	natsSub := setupNats(t, context.Background())
+	natsSub := setupNats(t)
 
 	err := send(cfg, &mockFileReader{})
 	require.NoError(t, err)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
 	select {
@@ -89,12 +89,12 @@ func TestSendNatsRepeat(t *testing.T) {
 		Repeat:          5,
 	}
 
-	natsSub := setupNats(t, context.Background())
+	natsSub := setupNats(t)
 
 	err := send(cfg, &mockFileReader{})
 	require.NoError(t, err)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
 	for i := 0; i < 5; i++ {
@@ -120,7 +120,7 @@ type natsSubscriber struct {
 	msgs chan *nats.Msg
 }
 
-func setupNats(t *testing.T, ctx context.Context) natsSubscriber {
+func setupNats(t *testing.T) natsSubscriber {
 	nc, err := nats.Connect(nats_url)
 	require.NoError(t, err)
 
@@ -138,7 +138,7 @@ func setupNats(t *testing.T, ctx context.Context) natsSubscriber {
 
 	go func() {
 		for {
-			msg, _ := sub.NextMsgWithContext(ctx)
+			msg, _ := sub.NextMsg(time.Second * 10)
 			natsSub.msgs <- msg
 		}
 	}()

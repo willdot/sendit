@@ -37,12 +37,12 @@ func TestSendRabbitQueue(t *testing.T) {
 		Repeat:          1,
 	}
 
-	consumer := setupRabbit(t, context.Background())
+	consumer := setupRabbit(t)
 
 	err := send(cfg, &mockFileReader{})
 	require.NoError(t, err)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
 	select {
@@ -66,12 +66,12 @@ func TestSendRabbitQueueRepeat(t *testing.T) {
 		Repeat:          5,
 	}
 
-	consumer := setupRabbit(t, context.Background())
+	consumer := setupRabbit(t)
 
 	err := send(cfg, &mockFileReader{})
 	require.NoError(t, err)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
 	for i := 0; i < 5; i++ {
@@ -97,12 +97,12 @@ func TestSendRabbitExchange(t *testing.T) {
 		Repeat:          1,
 	}
 
-	consumer := setupRabbit(t, context.Background())
+	consumer := setupRabbit(t)
 
 	err := send(cfg, &mockFileReader{})
 	require.NoError(t, err)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
 	select {
@@ -126,12 +126,12 @@ func TestSendRabbitExchangeRepeat(t *testing.T) {
 		Repeat:          5,
 	}
 
-	consumer := setupRabbit(t, context.Background())
+	consumer := setupRabbit(t)
 
 	err := send(cfg, &mockFileReader{})
 	require.NoError(t, err)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
 	for i := 0; i < 5; i++ {
@@ -157,7 +157,7 @@ type rabbitConsumer struct {
 	msgs <-chan amqp.Delivery
 }
 
-func setupRabbit(t *testing.T, ctx context.Context) rabbitConsumer {
+func setupRabbit(t *testing.T) rabbitConsumer {
 	conn, err := amqp.Dial(rabbit_url)
 	require.NoError(t, err)
 
