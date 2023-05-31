@@ -1,12 +1,11 @@
 version: '3.9'
 services:
   rabbitmq:
-    container_name: rabbit
     ports:
     - "15672:15672"
     - "5672:5672"
     image: "rabbitmq:3.8-management-alpine"
-
+  
   nats:
     image: nats
     ports:
@@ -14,3 +13,16 @@ services:
       - "8222:8222"
       - "6222:6222"
     command: -js
+  
+  redis:
+    image: bitnami/redis
+    restart: always
+    ports:
+      - '6379:6379'
+    command: redis-server --save 20 1 --loglevel warning --protected-mode no
+    volumes: 
+      - redis:/data
+
+volumes:
+  redis:
+    driver: local

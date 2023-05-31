@@ -4,21 +4,12 @@ on: [push]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-    services: 
-      service-name-1:
-        image: "rabbitmq:3.8-management-alpine"
-        ports:
-           - "5672:5672"
-
-      service-name-2:
-        image: nats
-        ports:
-           - "4222:4222"
-
     steps:
       - uses: actions/checkout@v3
+
+      - name: Start containers
+        run: docker-compose -f "docker-compose.yml" up -d
 
       - name: Set up Go
         uses: actions/setup-go@v4
