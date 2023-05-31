@@ -1,4 +1,4 @@
-package rabbit
+package brokers
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/willdot/sendit/config"
+	"github.com/willdot/sendit/service"
 )
 
 // DestinationType is where the message will be sent, either directly to a queue or to an exchange
@@ -56,9 +57,9 @@ func (r *RabbitPublisher) Shutdown() {
 	r.conn.Close()
 }
 
-// Publish will send the provided message
-func (r *RabbitPublisher) Publish(destinationName string, msgBody, headersData []byte) error {
-	headers, err := convertHeaders(headersData)
+// Send will send the provided message
+func (r *RabbitPublisher) Send(destinationName string, msg service.Message) error {
+	headers, err := convertRabbitHeaders(msg.Headers)
 	if err != nil {
 		return err
 	}
@@ -72,16 +73,16 @@ func (r *RabbitPublisher) Publish(destinationName string, msgBody, headersData [
 
 	switch r.destinationType {
 	case DestinationTypeExchange:
-		return r.publishToExchange(c, destinationName, msgBody, headers)
+		return r.publishToExchange(c, destinationName, msg.Body, headers)
 	case DestinationTypeQueue:
-		return r.publishToQueue(c, destinationName, msgBody, headers)
+		return r.publishToQueue(c, destinationName, msg.Body, headers)
 	default:
 	}
 
 	return nil
 }
 
-func convertHeaders(headerData []byte) (map[string]interface{}, error) {
+func convertRabbitHeaders(headerData []byte) (map[string]interface{}, error) {
 	if headerData == nil {
 		return nil, nil
 	}

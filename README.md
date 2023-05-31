@@ -60,6 +60,14 @@ Headers should be in JSON format in a key / array string format. eg:
 }
 ```
 
+### Redis
+``` sh
+sendit -body="body.json" -channel="test"
+```
+* channel(required) - the channel you wish to publish the message to
+
+Note: Redis does not support headers.
+
 ## Contributing 🤝
 
 Issues and PRs welcome.
