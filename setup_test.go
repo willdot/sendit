@@ -82,8 +82,7 @@ func setupRedis(t *testing.T) redisSubscriber {
 	})
 
 	res := client.Ping(context.Background())
-	fmt.Println(res)
-	require.NoError(t, client.Ping(context.Background()).Err())
+	require.NoError(t, res.Err())
 
 	redisSub := redisSubscriber{
 		msgs: make(chan *redis.Message),
