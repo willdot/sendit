@@ -110,7 +110,17 @@ type rabbitConsumer struct {
 }
 
 func setupRabbit(t *testing.T) rabbitConsumer {
-	conn, err := amqp.Dial(rabbit_url)
+	var conn *amqp.Connection
+	var err error
+	// try to connect up to 10 times, waiting a second between each attempt
+	for i := 0; i < 10; i++ {
+		conn, err = amqp.Dial(rabbit_url)
+		if err == nil {
+			break
+		}
+
+		time.Sleep(time.Second)
+	}
 	require.NoError(t, err)
 
 	ch, err := conn.Channel()
