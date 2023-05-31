@@ -29,21 +29,6 @@ const (
 	redis_url  = "localhost:6379"
 )
 
-// type mockFileReader struct{}
-
-// func (fr *mockFileReader) ReadFile(filename string) ([]byte, error) {
-// 	switch filename {
-// 	case "body.json":
-// 		return []byte(body), nil
-// 	case "nats-headers.json":
-// 		return []byte(nats_header), nil
-// 	case "rabbit-headers.json":
-// 		return []byte(rabbit_header), nil
-// 	default:
-// 		return nil, fmt.Errorf("invalid file name requested")
-// 	}
-// }
-
 func mockFileReader(filename string) ([]byte, error) {
 	switch filename {
 	case "body.json":
