@@ -13,6 +13,9 @@ func defaultFlags() flags {
 		destinationName: "destination",
 		subject:         "subject",
 		channel:         "channel",
+		topic:           "topic",
+		projectID:       "project-id",
+		repeat:          1,
 	}
 }
 
@@ -30,6 +33,15 @@ func TestHeadersProvidedForRedis(t *testing.T) {
 	fl.headersFileName = "headers.json"
 
 	_, err := NewConfig(RedisBroker, fl)
+	require.Error(t, err)
+	assert.Equal(t, "headers not valid for Redis broker", err.Error())
+}
+
+func TestHeadersProvidedForGooglePubSub(t *testing.T) {
+	fl := defaultFlags()
+	fl.headersFileName = "headers.json"
+
+	_, err := NewConfig(GooglePubSubBroker, fl)
 	require.Error(t, err)
 	assert.Equal(t, "headers not valid for Redis broker", err.Error())
 }
@@ -69,12 +81,25 @@ func TestInvalidBrokerConfig(t *testing.T) {
 				fl.channel = ""
 			},
 		},
+		"google pub/sub - no topic": {
+			broker:   GooglePubSubBroker,
+			expected: "topic flag should be provided",
+			alterFlags: func(fl *flags) {
+				fl.topic = ""
+			},
+		},
+		"google pub/sub - no project ID": {
+			broker:   GooglePubSubBroker,
+			expected: "project_id flag should be provided",
+			alterFlags: func(fl *flags) {
+				fl.projectID = ""
+			},
+		},
 	}
-
-	fl := defaultFlags()
 
 	for name, tc := range tt {
 		t.Run(name, func(t *testing.T) {
+			fl := defaultFlags()
 			tc.alterFlags(&fl)
 
 			_, err := NewConfig(tc.broker, fl)

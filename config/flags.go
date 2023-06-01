@@ -1,6 +1,8 @@
 package config
 
-import "flag"
+import (
+	"flag"
+)
 
 type flags struct {
 	bodyFileName    string
@@ -10,6 +12,9 @@ type flags struct {
 	destinationName string
 	subject         string
 	channel         string
+	topic           string
+	projectID       string
+	disableAuth     bool
 }
 
 // GetFlags will parse the flags provided by the users input and return the results
@@ -37,6 +42,16 @@ func GetFlags(brokerType string) flags {
 		channel = flag.String("channel", "", "the channel you wish to send the message to")
 	}
 
+	// google pub/sub flags
+	var topic *string
+	var projectID *string
+	var disableAuth *bool
+	if brokerType == GooglePubSubBroker {
+		topic = flag.String("topic", "", "the topic you wish to send the message to")
+		projectID = flag.String("project_id", "", "the project you wish to use")
+		disableAuth = flag.Bool("disable_auth", false, "use this if using locally in emulation mode")
+	}
+
 	flag.Parse()
 
 	result := flags{
@@ -56,6 +71,15 @@ func GetFlags(brokerType string) flags {
 	}
 	if channel != nil {
 		result.channel = *channel
+	}
+	if topic != nil {
+		result.topic = *topic
+	}
+	if projectID != nil {
+		result.projectID = *projectID
+	}
+	if disableAuth != nil {
+		result.disableAuth = *disableAuth
 	}
 
 	return result

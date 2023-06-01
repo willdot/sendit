@@ -9,6 +9,7 @@ const (
 	RabbitExchangeBroker = "RabbitMQ - Exchange"
 	NatsBroker           = "NATs"
 	RedisBroker          = "Redis"
+	GooglePubSubBroker   = "Google Pub/Sub"
 )
 
 // Config contains all of the configuration required to send messages to a broker
@@ -21,6 +22,7 @@ type Config struct {
 	RabbitCfg       *RabbitConfig
 	NatsCfg         *NatsConfig
 	RedisCfg        *RedisConfig
+	GooglePubSubCfg *GooglePubSubConfig
 }
 
 // NewConfig will create and validate configuration based on the provided flags
@@ -48,6 +50,14 @@ func NewConfig(brokerType string, flags flags) (*Config, error) {
 	if brokerType == RedisBroker {
 		cfg.RedisCfg = &RedisConfig{
 			Channel: flags.channel,
+		}
+	}
+
+	if brokerType == GooglePubSubBroker {
+		cfg.GooglePubSubCfg = &GooglePubSubConfig{
+			Topic:       flags.topic,
+			DisableAuth: flags.disableAuth,
+			ProjectID:   flags.projectID,
 		}
 	}
 
@@ -81,6 +91,12 @@ func (c Config) validate() error {
 		}
 	}
 
+	if c.Broker == GooglePubSubBroker {
+		if err := c.GooglePubSubCfg.validate(); err != nil {
+			return err
+		}
+	}
+
 	if c.BodyFileName == "" {
 		return errors.New("body flag must be provided")
 	}
@@ -102,6 +118,8 @@ func (c Config) Destination() string {
 		return c.NatsCfg.Subject
 	case RedisBroker:
 		return c.RedisCfg.Channel
+	case GooglePubSubBroker:
+		return c.GooglePubSubCfg.Topic
 	default:
 		return ""
 	}
@@ -146,6 +164,25 @@ func (c RedisConfig) validate() error {
 	return nil
 }
 
+// GooglePubSubConfig contains config specifically for Google Pub/Sub
+type GooglePubSubConfig struct {
+	Topic       string
+	ProjectID   string
+	DisableAuth bool
+}
+
+func (c GooglePubSubConfig) validate() error {
+	if c.Topic == "" {
+		return errors.New("topic flag should be provided")
+	}
+
+	if c.ProjectID == "" {
+		return errors.New("project_id flag should be provided")
+	}
+
+	return nil
+}
+
 func defaultURL(broker string) string {
 	switch broker {
 	case RabbitQueueBroker, RabbitExchangeBroker:
@@ -154,6 +191,9 @@ func defaultURL(broker string) string {
 		return "localhost:4222"
 	case RedisBroker:
 		return "localhost:6379"
+	case GooglePubSubBroker:
+		// there is no default URL for google pub/sub
+		return ""
 	default:
 		return ""
 	}

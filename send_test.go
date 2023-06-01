@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"cloud.google.com/go/pubsub"
 	"github.com/go-redis/redis/v8"
 	"github.com/nats-io/nats.go"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -120,6 +121,40 @@ func TestSendRedis(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestSendGooglePubSub(t *testing.T) {
+	cfg := &config.Config{
+		Broker: config.GooglePubSubBroker,
+		GooglePubSubCfg: &config.GooglePubSubConfig{
+			Topic:       test_topic,
+			ProjectID:   test_project_id,
+			DisableAuth: true,
+		},
+		URL:             google_pub_sub_url,
+		BodyFileName:    "body.json",
+		HeadersFileName: "google-pub-sub-headers.json",
+		Repeat:          1,
+	}
+
+	googlePubSub := setupGooglePubSub(t)
+
+	err := send(cfg, mockFileReader)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	select {
+	case msg := <-googlePubSub.msgs:
+		assert.Equal(t, string(body), string(msg.Data))
+		assertGooglePubSubHeadersMatch(t, google_pub_sub_header, msg.Attributes)
+	case <-ctx.Done():
+		t.Fatalf("timed out waiting for messages")
+	}
+
+	err = checkNoMoreMessages[*pubsub.Message](googlePubSub.msgs)
+	require.NoError(t, err)
+}
+
 func checkNoMoreMessages[T any](c <-chan T) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
 	defer cancel()
@@ -146,4 +181,12 @@ func assertNatsHeadersMatch(t *testing.T, expected string, actual nats.Header) {
 	require.NoError(t, err)
 
 	assert.Equal(t, expectedHeader, actual)
+}
+
+func assertGooglePubSubHeadersMatch(t *testing.T, expected string, actual map[string]string) {
+	var expectedHeader map[string]string
+	err := json.Unmarshal([]byte(expected), &expectedHeader)
+	require.NoError(t, err)
+
+	assert.EqualValues(t, expectedHeader, actual)
 }
