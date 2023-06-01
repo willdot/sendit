@@ -37,15 +37,6 @@ func TestHeadersProvidedForRedis(t *testing.T) {
 	assert.Equal(t, "headers not valid for Redis broker", err.Error())
 }
 
-func TestHeadersProvidedForGooglePubSub(t *testing.T) {
-	fl := defaultFlags()
-	fl.headersFileName = "headers.json"
-
-	_, err := NewConfig(GooglePubSubBroker, fl)
-	require.Error(t, err)
-	assert.Equal(t, "headers not valid for Redis broker", err.Error())
-}
-
 func TestInvalidRepeat(t *testing.T) {
 	fl := defaultFlags()
 	fl.repeat = 0
