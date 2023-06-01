@@ -192,7 +192,8 @@ func defaultURL(broker string) string {
 	case RedisBroker:
 		return "localhost:6379"
 	case GooglePubSubBroker:
-		// there is no default URL for google pub/sub
+		// for Google Pub/Sub the Google library uses a default URL (the real cloud one) so if the
+		// user doesn't specify a URL manually, then the Google library will use it's default URL
 		return ""
 	default:
 		return ""
