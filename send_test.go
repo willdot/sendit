@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub"
+	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/go-redis/redis/v8"
 	"github.com/nats-io/nats.go"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -152,6 +153,37 @@ func TestSendGooglePubSub(t *testing.T) {
 	}
 
 	err = checkNoMoreMessages[*pubsub.Message](googlePubSub.msgs)
+	require.NoError(t, err)
+}
+
+func TestSendSqs(t *testing.T) {
+	cfg := &config.Config{
+		Broker: config.SqsBroker,
+		SqsConfig: &config.SqsConfig{
+			Queue:       test_queue,
+			DisableAuth: true,
+		},
+		URL:          sqs_url,
+		BodyFileName: "body.json",
+		Repeat:       1,
+	}
+
+	sqsConsumer := setupSqs(t)
+
+	err := send(cfg, mockFileReader)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	select {
+	case msg := <-sqsConsumer.msgs:
+		assert.Equal(t, string(body), *msg.Body)
+	case <-ctx.Done():
+		t.Fatalf("timed out waiting for messages")
+	}
+
+	err = checkNoMoreMessages[*sqs.Message](sqsConsumer.msgs)
 	require.NoError(t, err)
 }
 

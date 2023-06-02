@@ -7,6 +7,10 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/go-redis/redis/v8"
 	"github.com/nats-io/nats.go"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -34,6 +38,7 @@ const (
 	nats_url           = "localhost:4222"
 	redis_url          = "localhost:6379"
 	google_pub_sub_url = "localhost:8085"
+	sqs_url            = "http://localhost:9324/"
 )
 
 func mockFileReader(filename string) ([]byte, error) {
@@ -216,4 +221,63 @@ func setupGooglePubSub(t *testing.T) googlePubSub {
 	}()
 
 	return pubSub
+}
+
+type sqsConsumer struct {
+	msgs chan *sqs.Message
+}
+
+func setupSqs(t *testing.T) sqsConsumer {
+	sess, err := session.NewSessionWithOptions(session.Options{
+		//Profile: "default",
+		Config: aws.Config{
+			Region:      aws.String("us-west-2"),
+			Endpoint:    aws.String(sqs_url),
+			Credentials: credentials.NewStaticCredentials("fakeMyKeyId", "fakeSecretAccessKey", ""),
+		},
+	})
+	require.NoError(t, err)
+
+	sqsClient := sqs.New(sess)
+
+	// make sure queue exists
+	_, err = sqsClient.CreateQueue(&sqs.CreateQueueInput{
+		QueueName: aws.String(test_queue),
+	})
+	require.NoError(t, err)
+
+	queue, err := sqsClient.GetQueueUrl(&sqs.GetQueueUrlInput{
+		QueueName: aws.String(test_queue),
+	})
+	require.NoError(t, err)
+
+	// make sure queue is empty first
+	_, err = sqsClient.PurgeQueue(&sqs.PurgeQueueInput{
+		QueueUrl: queue.QueueUrl,
+	})
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		_, _ = sqsClient.PurgeQueue(&sqs.PurgeQueueInput{
+			QueueUrl: queue.QueueUrl,
+		})
+	})
+
+	consumer := sqsConsumer{
+		msgs: make(chan *sqs.Message),
+	}
+	go func() {
+		msgResult, err := sqsClient.ReceiveMessage(&sqs.ReceiveMessageInput{
+			QueueUrl:            queue.QueueUrl,
+			MaxNumberOfMessages: aws.Int64(1),
+			WaitTimeSeconds:     aws.Int64(5),
+		})
+		require.NoError(t, err)
+
+		for _, msg := range msgResult.Messages {
+			consumer.msgs <- msg
+		}
+	}()
+
+	return consumer
 }

@@ -20,6 +20,7 @@ func main() {
 		config.NatsBroker,
 		config.RedisBroker,
 		config.GooglePubSubBroker,
+		config.SqsBroker,
 	}
 
 	selectedBroker, quit := input.PromptUserForSingleChoice(messageBrokers, "Select which message broker you wish to use")
@@ -74,6 +75,8 @@ func send(cfg *config.Config, fr readFileFunc) error {
 		publisher, err = brokers.NewRedisPublisher(cfg)
 	case config.GooglePubSubBroker:
 		publisher, err = brokers.NewGooglePubSubPublisher(cfg)
+	case config.SqsBroker:
+		publisher, err = brokers.NewSqsPublisher(cfg)
 	default:
 		return errors.New("invalid broker configured")
 	}

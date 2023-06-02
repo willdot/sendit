@@ -10,6 +10,7 @@ const (
 	NatsBroker           = "NATs"
 	RedisBroker          = "Redis"
 	GooglePubSubBroker   = "Google Pub/Sub"
+	SqsBroker            = "SQS"
 )
 
 // Config contains all of the configuration required to send messages to a broker
@@ -23,6 +24,7 @@ type Config struct {
 	NatsCfg         *NatsConfig
 	RedisCfg        *RedisConfig
 	GooglePubSubCfg *GooglePubSubConfig
+	SqsConfig       *SqsConfig
 }
 
 // NewConfig will create and validate configuration based on the provided flags
@@ -58,6 +60,12 @@ func NewConfig(brokerType string, flags flags) (*Config, error) {
 			Topic:       flags.topic,
 			DisableAuth: flags.disableAuth,
 			ProjectID:   flags.projectID,
+		}
+	}
+
+	if brokerType == SqsBroker {
+		cfg.SqsConfig = &SqsConfig{
+			Queue: flags.queue,
 		}
 	}
 
@@ -97,6 +105,12 @@ func (c Config) validate() error {
 		}
 	}
 
+	if c.Broker == SqsBroker {
+		if err := c.SqsConfig.validate(); err != nil {
+			return err
+		}
+	}
+
 	if c.BodyFileName == "" {
 		return errors.New("body flag must be provided")
 	}
@@ -120,6 +134,8 @@ func (c Config) Destination() string {
 		return c.RedisCfg.Channel
 	case GooglePubSubBroker:
 		return c.GooglePubSubCfg.Topic
+	case SqsBroker:
+		return c.SqsConfig.Queue
 	default:
 		return ""
 	}
@@ -183,6 +199,20 @@ func (c GooglePubSubConfig) validate() error {
 	return nil
 }
 
+// SqsConfig contains config specifically for SQS
+type SqsConfig struct {
+	Queue       string
+	DisableAuth bool
+}
+
+func (c SqsConfig) validate() error {
+	if c.Queue == "" {
+		return errors.New("queue flag should be provided")
+	}
+
+	return nil
+}
+
 func defaultURL(broker string) string {
 	switch broker {
 	case RabbitQueueBroker, RabbitExchangeBroker:
@@ -195,6 +225,9 @@ func defaultURL(broker string) string {
 		// for Google Pub/Sub the Google library uses a default URL (the real cloud one) so if the
 		// user doesn't specify a URL manually, then the Google library will use it's default URL
 		return ""
+	case SqsBroker:
+		// TODO: work this out
+		return "localhost:9324"
 	default:
 		return ""
 	}

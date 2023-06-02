@@ -15,6 +15,7 @@ type flags struct {
 	topic           string
 	projectID       string
 	disableAuth     bool
+	queue           string
 }
 
 // GetFlags will parse the flags provided by the users input and return the results
@@ -52,6 +53,13 @@ func GetFlags(brokerType string) flags {
 		disableAuth = flag.Bool("disable_auth", false, "use this if using locally in emulation mode")
 	}
 
+	// sqs flags
+	var queue *string
+	if brokerType == SqsBroker {
+		queue = flag.String("queue", "", "the queue you wish to send the message to")
+		disableAuth = flag.Bool("disable_auth", false, "use this if using locally where auth isn't required")
+	}
+
 	flag.Parse()
 
 	result := flags{
@@ -80,6 +88,9 @@ func GetFlags(brokerType string) flags {
 	}
 	if disableAuth != nil {
 		result.disableAuth = *disableAuth
+	}
+	if queue != nil {
+		result.queue = *queue
 	}
 
 	return result

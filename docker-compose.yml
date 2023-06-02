@@ -29,6 +29,11 @@ services:
     ports:
       - "8085:8085"
 
+  sqs:
+    image: softwaremill/elasticmq-native
+    ports:
+      - "9324:9324"
+
 volumes:
   redis:
     driver: local

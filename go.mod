@@ -4,12 +4,14 @@ go 1.20
 
 require (
 	cloud.google.com/go/pubsub v1.31.0
+	github.com/aws/aws-sdk-go v1.44.274
 	github.com/charmbracelet/bubbletea v0.24.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/nats-io/nats.go v1.25.0
 	github.com/pkg/errors v0.9.1
 	github.com/rabbitmq/amqp091-go v1.8.1
 	github.com/stretchr/testify v1.8.1
+	google.golang.org/api v0.124.0
 )
 
 require (
@@ -28,6 +30,7 @@ require (
 	github.com/google/s2a-go v0.1.4 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
 	github.com/googleapis/gax-go/v2 v2.9.1 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-isatty v0.0.18 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
@@ -49,7 +52,6 @@ require (
 	golang.org/x/sys v0.8.0 // indirect
 	golang.org/x/term v0.8.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
-	google.golang.org/api v0.124.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
 	google.golang.org/grpc v1.55.0 // indirect
