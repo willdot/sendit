@@ -11,8 +11,9 @@ type flags struct {
 	url             string
 	destinationName string
 	subject         string
-	topic           string
 	channel         string
+	channel         string
+	topic           string
 	projectID       string
 	disableAuth     bool
 }
