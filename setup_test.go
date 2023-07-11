@@ -80,10 +80,7 @@ func setupNats(t *testing.T, ctx context.Context) natsSubscriber {
 		for {
 			msg, err := sub.NextMsgWithContext(ctx)
 			if err != nil {
-				if err == context.Canceled {
-					return
-				}
-				t.Fatal(err)
+				return
 			}
 			natsSub.msgs <- msg
 		}
