@@ -12,7 +12,6 @@ type flags struct {
 	destinationName string
 	subject         string
 	channel         string
-	channel         string
 	topic           string
 	projectID       string
 	disableAuth     bool

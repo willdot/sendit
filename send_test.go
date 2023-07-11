@@ -179,7 +179,7 @@ func TestSendKafka(t *testing.T) {
 	select {
 	case msg := <-kafkaConsumer.msgs:
 		assert.Equal(t, string(body), string(msg.Value))
-		//assertGooglePubSubHeadersMatch(t, google_pub_sub_header, msg.Attributes)
+		assertKafkaHeadersMatch(t, kafka_header, msg.Headers)
 	case <-ctx.Done():
 		t.Fatalf("timed out waiting for messages")
 	}
