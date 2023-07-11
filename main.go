@@ -15,6 +15,7 @@ import (
 
 func main() {
 	messageBrokers := []string{
+		config.KafkaBroker,
 		config.RabbitExchangeBroker,
 		config.RabbitQueueBroker,
 		config.NatsBroker,
@@ -74,6 +75,8 @@ func send(cfg *config.Config, fr readFileFunc) error {
 		publisher, err = brokers.NewRedisPublisher(cfg)
 	case config.GooglePubSubBroker:
 		publisher, err = brokers.NewGooglePubSubPublisher(cfg)
+	case config.KafkaBroker:
+		publisher, err = brokers.NewKafkaPublisher(cfg)
 	default:
 		return errors.New("invalid broker configured")
 	}

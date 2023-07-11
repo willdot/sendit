@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub"
+	"github.com/Shopify/sarama"
 	"github.com/go-redis/redis/v8"
 	"github.com/nats-io/nats.go"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -21,6 +22,7 @@ const (
 	rabbit_header         = `{"header1": ["1", "2"],"header2": ["3", "4"]}`
 	nats_header           = `{"header1": ["1", "2"],"header2": ["3", "4"]}`
 	google_pub_sub_header = `{"header1": "1"}`
+	kafka_header          = `{"header1": "1", "header2": "2"}`
 
 	test_queue        = "test-queue"
 	test_exchange     = "test-exchange"
@@ -34,6 +36,7 @@ const (
 	nats_url           = "localhost:4222"
 	redis_url          = "localhost:6379"
 	google_pub_sub_url = "localhost:8085"
+	kafka_url          = "localhost:29092"
 )
 
 func mockFileReader(filename string) ([]byte, error) {
@@ -46,6 +49,8 @@ func mockFileReader(filename string) ([]byte, error) {
 		return []byte(rabbit_header), nil
 	case "google-pub-sub-headers.json":
 		return []byte(google_pub_sub_header), nil
+	case "kafka-headers.json":
+		return []byte(kafka_header), nil
 	default:
 		return nil, fmt.Errorf("invalid file name requested")
 	}
@@ -55,7 +60,7 @@ type natsSubscriber struct {
 	msgs chan *nats.Msg
 }
 
-func setupNats(t *testing.T) natsSubscriber {
+func setupNats(t *testing.T, ctx context.Context) natsSubscriber {
 	nc, err := nats.Connect(nats_url)
 	require.NoError(t, err)
 
@@ -73,7 +78,10 @@ func setupNats(t *testing.T) natsSubscriber {
 
 	go func() {
 		for {
-			msg, _ := sub.NextMsg(time.Second * 10)
+			msg, err := sub.NextMsgWithContext(ctx)
+			if err != nil {
+				return
+			}
 			natsSub.msgs <- msg
 		}
 	}()
@@ -85,7 +93,7 @@ type redisSubscriber struct {
 	msgs chan *redis.Message
 }
 
-func setupRedis(t *testing.T) redisSubscriber {
+func setupRedis(t *testing.T, ctx context.Context) redisSubscriber {
 	client := redis.NewClient(&redis.Options{
 		Addr: redis_url,
 	})
@@ -105,7 +113,10 @@ func setupRedis(t *testing.T) redisSubscriber {
 
 	go func() {
 		for {
-			msg, _ := subscriber.ReceiveMessage(context.Background())
+			msg, err := subscriber.ReceiveMessage(ctx)
+			if err != nil {
+				return
+			}
 			redisSub.msgs <- msg
 		}
 	}()
@@ -168,9 +179,8 @@ type googlePubSub struct {
 	msgs chan *pubsub.Message
 }
 
-func setupGooglePubSub(t *testing.T) googlePubSub {
+func setupGooglePubSub(t *testing.T, ctx context.Context) googlePubSub {
 	t.Setenv("PUBSUB_EMULATOR_HOST", google_pub_sub_url)
-	ctx := context.Background()
 
 	client, err := pubsub.NewClient(ctx, test_project_id, option.WithoutAuthentication(), option.WithEndpoint(google_pub_sub_url))
 	require.NoError(t, err)
@@ -207,13 +217,54 @@ func setupGooglePubSub(t *testing.T) googlePubSub {
 	}
 
 	go func() {
-		err = sub.Receive(ctx, func(_ context.Context, msg *pubsub.Message) {
+		_ = sub.Receive(ctx, func(_ context.Context, msg *pubsub.Message) {
 			msg.Ack()
 			pubSub.msgs <- msg
 		})
 
-		require.NoError(t, err)
 	}()
 
 	return pubSub
+}
+
+type kafkaConsumer struct {
+	msgs chan *sarama.ConsumerMessage
+}
+
+func setupKakfa(t *testing.T, ctx context.Context) kafkaConsumer {
+	consumer, err := sarama.NewConsumer([]string{kafka_url}, sarama.NewConfig())
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		broker := sarama.NewBroker(kafka_url)
+		err := broker.Open(sarama.NewConfig())
+		require.NoError(t, err)
+		_, err = broker.DeleteTopics(&sarama.DeleteTopicsRequest{
+			Topics: []string{test_topic},
+		})
+		require.NoError(t, err)
+
+		_ = broker.Close()
+		_ = consumer.Close()
+	})
+
+	pc, err := consumer.ConsumePartition(test_topic, 0, sarama.OffsetOldest)
+	require.NoError(t, err)
+
+	kafkaConsumer := kafkaConsumer{
+		msgs: make(chan *sarama.ConsumerMessage),
+	}
+
+	go func() {
+		for {
+			select {
+			case msg := <-pc.Messages():
+				kafkaConsumer.msgs <- msg
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	return kafkaConsumer
 }

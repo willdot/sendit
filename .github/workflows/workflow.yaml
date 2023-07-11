@@ -22,8 +22,8 @@ jobs:
       - name: Build
         run: go build -v ./...
 
-      - name: Test
-        run: go test -v ./...
-
       - name: lint
         run: golangci-lint run
+
+      - name: Test
+        run: go test ./... -count=1 -v
