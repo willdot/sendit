@@ -72,7 +72,10 @@ func TestSendNats(t *testing.T) {
 		Repeat:          1,
 	}
 
-	natsSub := setupNats(t)
+	consumerCtx, consumerCancel := context.WithCancel(context.Background())
+	defer consumerCancel()
+
+	natsSub := setupNats(t, consumerCtx)
 
 	err := send(cfg, mockFileReader)
 	require.NoError(t, err)
@@ -103,7 +106,10 @@ func TestSendRedis(t *testing.T) {
 		Repeat:       1,
 	}
 
-	redisSub := setupRedis(t)
+	consumerCtx, consumerCancel := context.WithCancel(context.Background())
+	defer consumerCancel()
+
+	redisSub := setupRedis(t, consumerCtx)
 
 	err := send(cfg, mockFileReader)
 	require.NoError(t, err)
@@ -136,7 +142,10 @@ func TestSendGooglePubSub(t *testing.T) {
 		Repeat:          1,
 	}
 
-	googlePubSub := setupGooglePubSub(t)
+	consumerCtx, consumerCancel := context.WithCancel(context.Background())
+	defer consumerCancel()
+
+	googlePubSub := setupGooglePubSub(t, consumerCtx)
 
 	err := send(cfg, mockFileReader)
 	require.NoError(t, err)
@@ -168,7 +177,10 @@ func TestSendKafka(t *testing.T) {
 		Repeat:          1,
 	}
 
-	kafkaConsumer := setupKakfa(t)
+	consumerCtx, consumerCancel := context.WithCancel(context.Background())
+	defer consumerCancel()
+
+	kafkaConsumer := setupKakfa(t, consumerCtx)
 
 	err := send(cfg, mockFileReader)
 	require.NoError(t, err)

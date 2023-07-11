@@ -60,7 +60,7 @@ type natsSubscriber struct {
 	msgs chan *nats.Msg
 }
 
-func setupNats(t *testing.T) natsSubscriber {
+func setupNats(t *testing.T, ctx context.Context) natsSubscriber {
 	nc, err := nats.Connect(nats_url)
 	require.NoError(t, err)
 
@@ -78,7 +78,13 @@ func setupNats(t *testing.T) natsSubscriber {
 
 	go func() {
 		for {
-			msg, _ := sub.NextMsg(time.Second * 10)
+			msg, err := sub.NextMsgWithContext(ctx)
+			if err != nil {
+				if err == context.Canceled {
+					return
+				}
+				t.Fatal(err)
+			}
 			natsSub.msgs <- msg
 		}
 	}()
@@ -90,7 +96,7 @@ type redisSubscriber struct {
 	msgs chan *redis.Message
 }
 
-func setupRedis(t *testing.T) redisSubscriber {
+func setupRedis(t *testing.T, ctx context.Context) redisSubscriber {
 	client := redis.NewClient(&redis.Options{
 		Addr: redis_url,
 	})
@@ -110,7 +116,10 @@ func setupRedis(t *testing.T) redisSubscriber {
 
 	go func() {
 		for {
-			msg, _ := subscriber.ReceiveMessage(context.Background())
+			msg, err := subscriber.ReceiveMessage(ctx)
+			if err != nil {
+				return
+			}
 			redisSub.msgs <- msg
 		}
 	}()
@@ -173,9 +182,8 @@ type googlePubSub struct {
 	msgs chan *pubsub.Message
 }
 
-func setupGooglePubSub(t *testing.T) googlePubSub {
+func setupGooglePubSub(t *testing.T, ctx context.Context) googlePubSub {
 	t.Setenv("PUBSUB_EMULATOR_HOST", google_pub_sub_url)
-	ctx := context.Background()
 
 	client, err := pubsub.NewClient(ctx, test_project_id, option.WithoutAuthentication(), option.WithEndpoint(google_pub_sub_url))
 	require.NoError(t, err)
@@ -212,12 +220,11 @@ func setupGooglePubSub(t *testing.T) googlePubSub {
 	}
 
 	go func() {
-		err = sub.Receive(ctx, func(_ context.Context, msg *pubsub.Message) {
+		_ = sub.Receive(ctx, func(_ context.Context, msg *pubsub.Message) {
 			msg.Ack()
 			pubSub.msgs <- msg
 		})
 
-		require.NoError(t, err)
 	}()
 
 	return pubSub
@@ -227,7 +234,7 @@ type kafkaConsumer struct {
 	msgs chan *sarama.ConsumerMessage
 }
 
-func setupKakfa(t *testing.T) kafkaConsumer {
+func setupKakfa(t *testing.T, ctx context.Context) kafkaConsumer {
 	consumer, err := sarama.NewConsumer([]string{kafka_url}, sarama.NewConfig())
 	require.NoError(t, err)
 
@@ -253,8 +260,12 @@ func setupKakfa(t *testing.T) kafkaConsumer {
 
 	go func() {
 		for {
-			msg := <-pc.Messages()
-			kafkaConsumer.msgs <- msg
+			select {
+			case msg := <-pc.Messages():
+				kafkaConsumer.msgs <- msg
+			case <-ctx.Done():
+				return
+			}
 		}
 	}()
 
