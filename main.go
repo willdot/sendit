@@ -7,11 +7,10 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/willdot/sendit/brokers"
 	"github.com/willdot/sendit/config"
 	"github.com/willdot/sendit/input"
-	"github.com/willdot/sendit/kafka"
-	"github.com/willdot/sendit/nats"
-	"github.com/willdot/sendit/rabbit"
+	"github.com/willdot/sendit/service"
 )
 
 func main() {
@@ -20,6 +19,8 @@ func main() {
 		config.RabbitExchangeBroker,
 		config.RabbitQueueBroker,
 		config.NatsBroker,
+		config.RedisBroker,
+		config.GooglePubSubBroker,
 	}
 
 	selectedBroker, quit := input.PromptUserForSingleChoice(messageBrokers, "Select which message broker you wish to use")
@@ -35,24 +36,22 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = send(cfg, &RealFileReader{})
+	fileReader := func(filename string) ([]byte, error) {
+		return os.ReadFile(filename)
+	}
+
+	err = send(cfg, fileReader)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	fmt.Println("Finished 🎉")
 }
 
-type fileReader interface {
-	ReadFile(filename string) ([]byte, error)
-}
+type readFileFunc func(filename string) ([]byte, error)
 
-type RealFileReader struct{}
-
-func (fr *RealFileReader) ReadFile(filename string) ([]byte, error) {
-	return os.ReadFile(filename)
-}
-
-func send(cfg *config.Config, fr fileReader) error {
-	bodyData, err := fr.ReadFile(cfg.BodyFileName)
+func send(cfg *config.Config, fr readFileFunc) error {
+	bodyData, err := fr(cfg.BodyFileName)
 	if err != nil {
 		return errors.Wrap(err, "failed to read message body file")
 	}
@@ -60,77 +59,37 @@ func send(cfg *config.Config, fr fileReader) error {
 	var headersData []byte
 	if cfg.HeadersFileName != "" {
 		var err error
-		headersData, err = fr.ReadFile(cfg.HeadersFileName)
+		headersData, err = fr(cfg.HeadersFileName)
 		if err != nil {
 			return errors.Wrap(err, "failed to read headers file")
 		}
 	}
 
+	var publisher service.Publisher
 	switch cfg.Broker {
 	case config.RabbitExchangeBroker, config.RabbitQueueBroker:
-		err := sendRabbit(cfg, bodyData, headersData)
-		if err != nil {
-			return errors.Wrap(err, "failed to send to RabbitMQ")
-		}
+		publisher, err = brokers.NewRabbitPublisher(cfg)
 	case config.NatsBroker:
-		err := sendNats(cfg, bodyData, headersData)
-		if err != nil {
-			return errors.Wrap(err, "failed to send to NATs")
-		}
+		publisher, err = brokers.NewNatsPublisher(cfg)
+	case config.RedisBroker:
+		publisher, err = brokers.NewRedisPublisher(cfg)
+	case config.GooglePubSubBroker:
+		publisher, err = brokers.NewGooglePubSubPublisher(cfg)
 	case config.KafkaBroker:
-		err := sendKafka(cfg, bodyData, headersData)
-		if err != nil {
-			return errors.Wrap(err, "failed to send to Kafka")
-		}
+		publisher, err = brokers.NewKafkaPublisher(cfg)
 	default:
+		return errors.New("invalid broker configured")
 	}
-	fmt.Println("Finished 🎉")
-	return nil
-}
-
-func sendRabbit(cfg *config.Config, msgBody, headers []byte) error {
-	publisher, err := rabbit.NewRabbitPublisher(cfg)
 	if err != nil {
-		return errors.Wrap(err, "failed to create new rabbit publisher")
+		return err
 	}
-	defer publisher.Shutdown()
 
-	for i := 0; i < cfg.Repeat; i++ {
-		err = publisher.Publish(cfg.RabbitCfg.DestinationName, msgBody, headers)
-		if err != nil {
-			return errors.Wrap(err, "failed to send message")
-		}
-	}
-	return nil
-}
+	service := service.New(publisher, cfg)
+	defer service.Shutdown()
 
-func sendNats(cfg *config.Config, msgBody, headers []byte) error {
-	publisher, err := nats.NewNatsPublisher(cfg)
+	err = service.Run(bodyData, headersData)
 	if err != nil {
-		return errors.Wrap(err, "failed to create new nats publisher")
-	}
-	defer publisher.Shutdown()
-	for i := 0; i < cfg.Repeat; i++ {
-		err = publisher.Publish(cfg.NatsCfg.Subject, msgBody, headers)
-		if err != nil {
-			return errors.Wrap(err, "failed to send message")
-		}
-	}
-	return nil
-
-}
-
-func sendKafka(cfg *config.Config, msgBody, headers []byte) error {
-	publisher, err := kafka.NewKafkaPublisher(cfg)
-	if err != nil {
-		return errors.Wrap(err, "failed to create new kafka publisher")
-	}
-	defer publisher.Shutdown()
-	for i := 0; i < cfg.Repeat; i++ {
-		err = publisher.Publish(cfg.KafkaCfg.Topic, msgBody, headers)
-		if err != nil {
-			return errors.Wrap(err, "failed to send message")
-		}
+		return err
 	}
 
 	return nil

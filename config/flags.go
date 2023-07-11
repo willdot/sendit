@@ -1,22 +1,27 @@
 package config
 
-import "flag"
+import (
+	"flag"
+)
 
 type flags struct {
 	bodyFileName    string
+	headersFileName string
 	repeat          int
 	url             string
 	destinationName string
-	headersFileName string
 	subject         string
 	topic           string
+	channel         string
+	projectID       string
+	disableAuth     bool
 }
 
 // GetFlags will parse the flags provided by the users input and return the results
 func GetFlags(brokerType string) flags {
 	bodyFileName := flag.String("body", "", "the file name of the body to send in the message")
-	repeat := flag.Int("repeat", 1, "the number of times to send the message")
-	url := flag.String("url", defaultURL(brokerType), "the url of the broker you wish to send to")
+	repeat := flag.Int("repeat", 1, "the number of times to send the message (optional - default of 1 will be used)")
+	url := flag.String("url", defaultURL(brokerType), "the url of the broker you wish to send to (optional - the default for the broker will be used")
 	headersFileName := flag.String("headers", "", "the file name of the header to send in the message (optional)")
 
 	// rabbit flags
@@ -35,6 +40,21 @@ func GetFlags(brokerType string) flags {
 	var topic *string
 	if brokerType == KafkaBroker {
 		topic = flag.String("topic", "", "the topic you wish to send the message to")
+	}
+
+	// redis flags
+	var channel *string
+	if brokerType == RedisBroker {
+		channel = flag.String("channel", "", "the channel you wish to send the message to")
+	}
+
+	// google pub/sub flags
+	var projectID *string
+	var disableAuth *bool
+	if brokerType == GooglePubSubBroker {
+		topic = flag.String("topic", "", "the topic you wish to send the message to")
+		projectID = flag.String("project_id", "", "the project you wish to use")
+		disableAuth = flag.Bool("disable_auth", false, "use this if using locally in emulation mode")
 	}
 
 	flag.Parse()
@@ -56,6 +76,18 @@ func GetFlags(brokerType string) flags {
 	}
 	if topic != nil {
 		result.topic = *topic
+	}
+	if channel != nil {
+		result.channel = *channel
+	}
+	if topic != nil {
+		result.topic = *topic
+	}
+	if projectID != nil {
+		result.projectID = *projectID
+	}
+	if disableAuth != nil {
+		result.disableAuth = *disableAuth
 	}
 
 	return result

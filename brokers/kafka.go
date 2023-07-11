@@ -1,4 +1,4 @@
-package kafka
+package brokers
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/pkg/errors"
 	"github.com/willdot/sendit/config"
+	"github.com/willdot/sendit/service"
 )
 
 // KafkaPublisher is a publisher that can send messages to a Kafka server
@@ -34,15 +35,15 @@ func (p *KafkaPublisher) Shutdown() {
 }
 
 // Publish will send the provided message
-func (p *KafkaPublisher) Publish(destination string, msgBody, headersData []byte) error {
-	headers, err := convertHeaders(headersData)
+func (p *KafkaPublisher) Send(destination string, msg service.Message) error {
+	headers, err := convertHeaders(msg.Headers)
 	if err != nil {
 		return err
 	}
 
 	_, _, err = p.conn.SendMessage(&sarama.ProducerMessage{
 		Topic:   destination,
-		Value:   sarama.StringEncoder(msgBody),
+		Value:   sarama.StringEncoder(msg.Body),
 		Headers: headers,
 	})
 	if err != nil {

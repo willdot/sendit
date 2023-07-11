@@ -15,14 +15,14 @@ These are just examples of when I've wanted a tool that could do this.
 
 ## Installation 🛠️
 
-``` sh
+```bash
 go install github.com/willdot/sendit@latest
 ```
 
 ## Useage 🧭
 Basic useage. See different broker sections for broker specific details.
 
-``` sh
+```bash
 sendit -body="body.json" -headers="headers.json" -url="localhost:1234" -repeat=3
 ```
 * body (required) - the path to a file containing the data you wish to send as the body of the message
@@ -33,7 +33,7 @@ sendit -body="body.json" -headers="headers.json" -url="localhost:1234" -repeat=3
 ### RabbitMQ
 You can either send directly to a queue OR to an exchange. You will be asked to select which option when you run the tool.
 
-``` sh
+```bash
 sendit -body="body.json" -destination="test"
 ```
 * destination(required) - the name of the queue or exchange to send the message to.
@@ -47,7 +47,7 @@ Headers should be in JSON format in a key / value format. eg:
 ```
 
 ### NATs
-``` sh
+```bash
 sendit -body="body.json" -subject="test"
 ```
 * subject(required) - the subject you wish to use for the message
@@ -60,18 +60,34 @@ Headers should be in JSON format in a key / array string format. eg:
 }
 ```
 
-### Kafka
-``` sh
-sendit -body="body.json" -topic="test"
+### Redis
+```bash
+sendit -body="body.json" -channel="test"
 ```
-* topic(required) - the topic you wish to send the message too
+* channel(required) - the channel you wish to publish the message to
+
+Note: Redis does not support headers.
+
+### Google Pub/Sub
+```bash
+sendit -body="body.json" -topic="test-topic" -project_id="your-project-id" -disable_auth=true -url="localhost:8085"
+```
+* topic(required) - the topic you wish to send the message to
+* project_id (required) - the ID of the project to use
+* disable_auth (optional) - use this if you are testing with a local emulator
+* url (optional) - use this to override the default for Google Cloud Services. 
 
 Headers should be in JSON format in a key / string format. eg:
 ``` json
 {
     "header1" : "value1",
-    "header2" : "value2"
+    "header2" : "value3"
 }
+```
+
+Note: If you are using a local emulator, you will need to export the following:
+```bash
+PUBSUB_EMULATOR_HOST=localhost:8085
 ```
 
 ## Contributing 🤝

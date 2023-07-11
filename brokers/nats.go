@@ -1,4 +1,4 @@
-package nats
+package brokers
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/pkg/errors"
 	"github.com/willdot/sendit/config"
+	"github.com/willdot/sendit/service"
 )
 
 // NatsPublisher is a publisher that can send messages to a NATs server
@@ -31,14 +32,14 @@ func (p *NatsPublisher) Shutdown() {
 	p.conn.Close()
 }
 
-// Publish will send the provided message
-func (p *NatsPublisher) Publish(destination string, msgBody, headersData []byte) error {
-	headers, err := convertHeaders(headersData)
+// Send will send the provided message
+func (p *NatsPublisher) Send(destination string, msg service.Message) error {
+	headers, err := convertNatsHeaders(msg.Headers)
 	if err != nil {
 		return err
 	}
 	err = p.conn.PublishMsg(&nats.Msg{
-		Data:    msgBody,
+		Data:    msg.Body,
 		Subject: destination,
 		Header:  headers,
 	})
@@ -49,7 +50,7 @@ func (p *NatsPublisher) Publish(destination string, msgBody, headersData []byte)
 	return nil
 }
 
-func convertHeaders(headerData []byte) (nats.Header, error) {
+func convertNatsHeaders(headerData []byte) (nats.Header, error) {
 	if headerData == nil {
 		return nil, nil
 	}
