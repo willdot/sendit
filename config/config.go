@@ -8,6 +8,7 @@ const (
 	RabbitQueueBroker    = "RabbitMQ - Queue"
 	RabbitExchangeBroker = "RabbitMQ - Exchange"
 	NatsBroker           = "NATs"
+	KafkaBroker          = "Kafka"
 	RedisBroker          = "Redis"
 	GooglePubSubBroker   = "Google Pub/Sub"
 )
@@ -21,6 +22,7 @@ type Config struct {
 	Repeat          int
 	RabbitCfg       *RabbitConfig
 	NatsCfg         *NatsConfig
+	KafkaCfg        *KafkaConfig
 	RedisCfg        *RedisConfig
 	GooglePubSubCfg *GooglePubSubConfig
 }
@@ -44,6 +46,12 @@ func NewConfig(brokerType string, flags flags) (*Config, error) {
 	if brokerType == NatsBroker {
 		cfg.NatsCfg = &NatsConfig{
 			Subject: flags.subject,
+		}
+	}
+
+	if brokerType == KafkaBroker {
+		cfg.KafkaCfg = &KafkaConfig{
+			Topic: flags.topic,
 		}
 	}
 
@@ -78,6 +86,12 @@ func (c Config) validate() error {
 
 	if c.Broker == NatsBroker {
 		if err := c.NatsCfg.validate(); err != nil {
+			return err
+		}
+	}
+
+	if c.Broker == KafkaBroker {
+		if err := c.KafkaCfg.validate(); err != nil {
 			return err
 		}
 	}
@@ -120,6 +134,8 @@ func (c Config) Destination() string {
 		return c.RedisCfg.Channel
 	case GooglePubSubBroker:
 		return c.GooglePubSubCfg.Topic
+	case KafkaBroker:
+		return c.KafkaCfg.Topic
 	default:
 		return ""
 	}
@@ -148,6 +164,18 @@ func (c NatsConfig) validate() error {
 		return errors.New("subject flag should be provided")
 	}
 
+	return nil
+}
+
+// KafkaConfig contains config specifically for Kafka
+type KafkaConfig struct {
+	Topic string
+}
+
+func (c KafkaConfig) validate() error {
+	if c.Topic == "" {
+		return errors.New("topic flag should be provided")
+	}
 	return nil
 }
 
@@ -189,6 +217,8 @@ func defaultURL(broker string) string {
 		return "amqp://guest:guest@localhost:5672/"
 	case NatsBroker:
 		return "localhost:4222"
+	case KafkaBroker:
+		return "localhost:29092"
 	case RedisBroker:
 		return "localhost:6379"
 	case GooglePubSubBroker:

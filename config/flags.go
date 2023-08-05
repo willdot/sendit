@@ -36,6 +36,12 @@ func GetFlags(brokerType string) flags {
 		subject = flag.String("subject", "", "the subject you wish to send the message to")
 	}
 
+	// kafka flags
+	var topic *string
+	if brokerType == KafkaBroker {
+		topic = flag.String("topic", "", "the topic you wish to send the message to")
+	}
+
 	// redis flags
 	var channel *string
 	if brokerType == RedisBroker {
@@ -43,7 +49,6 @@ func GetFlags(brokerType string) flags {
 	}
 
 	// google pub/sub flags
-	var topic *string
 	var projectID *string
 	var disableAuth *bool
 	if brokerType == GooglePubSubBroker {
@@ -68,6 +73,9 @@ func GetFlags(brokerType string) flags {
 	}
 	if subject != nil {
 		result.subject = *subject
+	}
+	if topic != nil {
+		result.topic = *topic
 	}
 	if channel != nil {
 		result.channel = *channel

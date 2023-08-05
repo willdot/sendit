@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub"
+	"github.com/Shopify/sarama"
 	"github.com/go-redis/redis/v8"
 	"github.com/nats-io/nats.go"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -71,7 +72,10 @@ func TestSendNats(t *testing.T) {
 		Repeat:          1,
 	}
 
-	natsSub := setupNats(t)
+	consumerCtx, consumerCancel := context.WithCancel(context.Background())
+	defer consumerCancel()
+
+	natsSub := setupNats(t, consumerCtx)
 
 	err := send(cfg, mockFileReader)
 	require.NoError(t, err)
@@ -102,7 +106,10 @@ func TestSendRedis(t *testing.T) {
 		Repeat:       1,
 	}
 
-	redisSub := setupRedis(t)
+	consumerCtx, consumerCancel := context.WithCancel(context.Background())
+	defer consumerCancel()
+
+	redisSub := setupRedis(t, consumerCtx)
 
 	err := send(cfg, mockFileReader)
 	require.NoError(t, err)
@@ -135,7 +142,10 @@ func TestSendGooglePubSub(t *testing.T) {
 		Repeat:          1,
 	}
 
-	googlePubSub := setupGooglePubSub(t)
+	consumerCtx, consumerCancel := context.WithCancel(context.Background())
+	defer consumerCancel()
+
+	googlePubSub := setupGooglePubSub(t, consumerCtx)
 
 	err := send(cfg, mockFileReader)
 	require.NoError(t, err)
@@ -152,6 +162,41 @@ func TestSendGooglePubSub(t *testing.T) {
 	}
 
 	err = checkNoMoreMessages[*pubsub.Message](googlePubSub.msgs)
+	require.NoError(t, err)
+}
+
+func TestSendKafka(t *testing.T) {
+	cfg := &config.Config{
+		Broker: config.KafkaBroker,
+		KafkaCfg: &config.KafkaConfig{
+			Topic: test_topic,
+		},
+		URL:             kafka_url,
+		BodyFileName:    "body.json",
+		HeadersFileName: "kafka-headers.json",
+		Repeat:          1,
+	}
+
+	consumerCtx, consumerCancel := context.WithCancel(context.Background())
+	defer consumerCancel()
+
+	kafkaConsumer := setupKakfa(t, consumerCtx)
+
+	err := send(cfg, mockFileReader)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	select {
+	case msg := <-kafkaConsumer.msgs:
+		assert.Equal(t, string(body), string(msg.Value))
+		assertKafkaHeadersMatch(t, kafka_header, msg.Headers)
+	case <-ctx.Done():
+		t.Fatalf("timed out waiting for messages")
+	}
+
+	err = checkNoMoreMessages[*sarama.ConsumerMessage](kafkaConsumer.msgs)
 	require.NoError(t, err)
 }
 
@@ -189,4 +234,21 @@ func assertGooglePubSubHeadersMatch(t *testing.T, expected string, actual map[st
 	require.NoError(t, err)
 
 	assert.EqualValues(t, expectedHeader, actual)
+}
+
+func assertKafkaHeadersMatch(t *testing.T, expected string, actual []*sarama.RecordHeader) {
+	var headers map[string]string
+	err := json.Unmarshal([]byte(expected), &headers)
+	require.NoError(t, err)
+
+	var expectedHeader []*sarama.RecordHeader
+
+	for k, v := range headers {
+		expectedHeader = append(expectedHeader, &sarama.RecordHeader{
+			Key:   []byte(k),
+			Value: []byte(v),
+		})
+	}
+
+	assert.ElementsMatch(t, expectedHeader, actual)
 }
